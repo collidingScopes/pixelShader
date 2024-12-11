@@ -12,8 +12,11 @@ let isWebcam = true;
 
 const cameraSelect = document.getElementById('cameraSelect');
 
+let isMobileFlag = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+console.log(isMobileFlag)
+
 // Show camera toggle only when using mobile device
-if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+if (isMobileFlag) {
     document.getElementById('cameraToggle').style.display = 'flex';
 }
 
@@ -28,10 +31,12 @@ cameraSelect.addEventListener('change', async () => {
 
 // Event listeners for controls
 
-// Add this to your JavaScript to display the filename of uploaded videos
-document.getElementById('videoInput').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || '';
-    document.getElementById('fileName').textContent = fileName;
+videoInput.addEventListener('change', (e) => {
+  if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      document.getElementById('fileName').textContent = file.name;
+      handleVideoUpload(file);
+  }
 });
 
 pixelSizeInput.addEventListener('input', (e) => {
@@ -39,21 +44,22 @@ pixelSizeInput.addEventListener('input', (e) => {
 });
 
 inputToggle.addEventListener('change', async () => {
-    isWebcam = inputToggle.value === 'webcam';
-    if (currentVideo) {
-        const tracks = currentVideo.srcObject?.getTracks();
-        tracks?.forEach(track => track.stop());
-    }
-    if (isWebcam) {
-        setupWebcam().then(video => {
-            currentVideo = video;
-            render(video);
-        });
-    } else {
-        videoInput.click();
-    }
+  isWebcam = inputToggle.value === 'webcam';
+  cleanupVideoSource();
+  
+  if (isWebcam) {
+      setupWebcam().then(video => {
+          currentVideo = video;
+          render(video);
+      }).catch(err => {
+          console.error('Failed to start webcam:', err);
+      });
+  } else {
+      videoInput.click();
+  }
 });
 
+/*
 videoInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
@@ -70,6 +76,7 @@ videoInput.addEventListener('change', (e) => {
         render(video);
     }
 });
+*/
 
 if (!gl) {
     alert('WebGL not supported');
@@ -329,19 +336,52 @@ const resolutionLocation = gl.getUniformLocation(program, 'resolution');
 const pixelSizeLocation = gl.getUniformLocation(program, 'pixelSize');
 const paletteChoiceLocation = gl.getUniformLocation(program, 'paletteChoice');
 
+/*
 const texture = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, texture);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+*/
 
-async function setupWebcam(facingMode = 'environment') {
+const texture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, texture);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+// Initialize with empty texture
+gl.texImage2D(
+    gl.TEXTURE_2D, 
+    0, 
+    gl.RGBA, 
+    1, 
+    1, 
+    0, 
+    gl.RGBA, 
+    gl.UNSIGNED_BYTE, 
+    new Uint8Array([0, 0, 0, 255])
+);
+
+// Add initialization code
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.enable(gl.DEPTH_TEST);
+
+async function setupWebcam() {
   const video = document.createElement('video');
+
+  if(isMobileFlag){
+    video.setAttribute('playsinline', '');  // Required for iOS
+    video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('autoplay', '');
+    video.style.transform = 'scaleX(-1)';  // Mirror the video
+  }
+
   try {
       const constraints = {
           video: {
-              facingMode: facingMode,
+              facingMode: "user",  // Start with front camera for testing
               width: { ideal: 1280 },
               height: { ideal: 720 }
           }
@@ -349,17 +389,18 @@ async function setupWebcam(facingMode = 'environment') {
       
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
-      video.play();
       
-      // Add playsinline attribute for iOS
-      video.setAttribute('playsinline', true);
-      video.setAttribute('webkit-playsinline', true);
+      // Wait for video to be ready
+      await new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+              video.play().then(() => resolve());
+          };
+      });
       
-      video.onloadedmetadata = () => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          gl.viewport(0, 0, canvas.width, canvas.height);
-      };
+      // Set canvas size after video is ready
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
       
       return video;
   } catch (err) {
@@ -369,55 +410,71 @@ async function setupWebcam(facingMode = 'environment') {
 }
 
 function render(video) {
-    if (!video.paused && !video.ended) {
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+  if (!video || video.readyState < video.HAVE_CURRENT_DATA) {
+      requestAnimationFrame(() => render(video));
+      return;
+  }
 
-        gl.useProgram(program);
+  if (!video.paused && !video.ended) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      
+      try {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+      } catch (e) {
+          console.error('Error updating texture:', e);
+          requestAnimationFrame(() => render(video));
+          return;
+      }
 
-        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-        gl.uniform1f(pixelSizeLocation, parseFloat(pixelSizeInput.value));
-        
-        let paletteValue;
-        switch(paletteSelect.value) {
-            case 'landscape': paletteValue = 0; break;
-            case 'underwater': paletteValue = 1; break;
-            case 'forest': paletteValue = 2; break;
-            case 'flame': paletteValue = 3; break;
-            case 'dusk': paletteValue = 4; break;
-            case 'grayscale': paletteValue = 5; break;
-            default: paletteValue = 0;
-        }
-        gl.uniform1i(paletteChoiceLocation, paletteValue);
+      gl.useProgram(program);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+      // Set uniforms
+      gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+      gl.uniform1f(pixelSizeLocation, parseFloat(pixelSizeInput.value));
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        gl.enableVertexAttribArray(texCoordLocation);
-        gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+      let paletteValue;
+      switch(paletteSelect.value) {
+          case 'landscape': paletteValue = 0; break;
+          case 'underwater': paletteValue = 1; break;
+          case 'forest': paletteValue = 2; break;
+          case 'flame': paletteValue = 3; break;
+          case 'dusk': paletteValue = 4; break;
+          case 'grayscale': paletteValue = 5; break;
+          default: paletteValue = 0;
+      }
+      gl.uniform1i(paletteChoiceLocation, paletteValue);
 
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    }
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-    requestAnimationFrame(() => render(video));
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.enableVertexAttribArray(texCoordLocation);
+      gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  requestAnimationFrame(() => render(video));
 }
 
 // Handle video source cleanup
 function cleanupVideoSource() {
-    if (currentVideo) {
-        if (currentVideo.srcObject) {
-            // Stop webcam stream
-            const tracks = currentVideo.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
-        } else {
-            // Cleanup uploaded video
-            URL.revokeObjectURL(currentVideo.src);
-        }
-        currentVideo.pause();
-    }
+  if (currentVideo) {
+      currentVideo.pause();
+      if (currentVideo.srcObject) {
+          // Stop webcam stream
+          const tracks = currentVideo.srcObject.getTracks();
+          tracks.forEach(track => track.stop());
+          currentVideo.srcObject = null;
+      } else if (currentVideo.src) {
+          // Clean up uploaded video
+          URL.revokeObjectURL(currentVideo.src);
+          currentVideo.src = '';
+      }
+      currentVideo = null;
+  }
 }
 
 // Initialize with webcam by default
@@ -430,3 +487,31 @@ setupWebcam().then(video => {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', cleanupVideoSource);
+
+function handleVideoUpload(file) {
+  cleanupVideoSource();
+  
+  const video = document.createElement('video');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  video.setAttribute('crossorigin', 'anonymous');
+  
+  // Create object URL for the uploaded file
+  const objectURL = URL.createObjectURL(file);
+  video.src = objectURL;
+  video.loop = true;
+  
+  // Set up video loading handlers
+  video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  
+  // Wait for video to be loaded before playing
+  video.oncanplay = () => {
+      video.play();
+      currentVideo = video;
+      render(video);
+  };
+}

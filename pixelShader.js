@@ -524,19 +524,19 @@ function useDefaultVideo() {
   defaultVideo.loop = true;
   
   // Set up video loading handlers
-  defaultVideo.onloadedmetadata = () => {
+  // defaultVideo.onloadedmetadata = () => {
       canvas.width = defaultVideo.videoWidth;
       canvas.height = defaultVideo.videoHeight;
       gl.viewport(0, 0, canvas.width, canvas.height);
-  };
+  // };
   
   // Wait for video to be loaded before playing
-  defaultVideo.oncanplay = () => {
+  // defaultVideo.oncanplay = () => {
       defaultVideo.play();
       currentVideo = defaultVideo;
       // animationRequest = render(currentVideo);
       render();
-  };
+  // };
 }
 
 function toggleAnimationPlay(){

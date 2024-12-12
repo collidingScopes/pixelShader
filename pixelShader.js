@@ -8,6 +8,7 @@ Clean up code / remove commented out code
 Review CSS / page layout / margins
 Mobile functionality testing
 Rename page title, github repo, etc...
+Upon video record, rewind user video and default video to 0 time (see ASCII example)
 */
 
 // DOM Elements
@@ -21,6 +22,9 @@ let animationPlayToggle = false;
 let animationRequest;
 let isMobileFlag = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 console.log("Mobile?: "+isMobileFlag);
+
+// let userVideo = document.getElementById('userVideo');
+let defaultVideo = document.getElementById('defaultVideo');
 
 if (!gl) {
   alert('WebGL not supported');
@@ -510,27 +514,26 @@ function handleVideoUpload(file) {
 function useDefaultVideo() {
   cleanupVideoSource();
   
-  const video = document.querySelector('#defaultVideo');
   // video.setAttribute('playsinline', 'playsinline');
   // video.setAttribute('webkit-playsinline', 'webkit-playsinline');
-  video.setAttribute('crossorigin', 'anonymous');
+  defaultVideo.setAttribute('crossorigin', 'anonymous');
   
   // Create object URL for the uploaded file
   // const objectURL = URL.createObjectURL(file);
   // video.src = objectURL;
-  video.loop = true;
+  defaultVideo.loop = true;
   
   // Set up video loading handlers
-  video.onloadedmetadata = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+  defaultVideo.onloadedmetadata = () => {
+      canvas.width = defaultVideo.videoWidth;
+      canvas.height = defaultVideo.videoHeight;
       gl.viewport(0, 0, canvas.width, canvas.height);
   };
   
   // Wait for video to be loaded before playing
-  video.oncanplay = () => {
-      video.play();
-      currentVideo = video;
+  defaultVideo.oncanplay = () => {
+      defaultVideo.play();
+      currentVideo = defaultVideo;
       // animationRequest = render(currentVideo);
       render();
   };

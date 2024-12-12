@@ -511,8 +511,8 @@ function useDefaultVideo() {
   cleanupVideoSource();
   
   const video = document.querySelector('#defaultVideo');
-  video.setAttribute('playsinline', 'playsinline');
-  video.setAttribute('webkit-playsinline', 'webkit-playsinline');
+  // video.setAttribute('playsinline', 'playsinline');
+  // video.setAttribute('webkit-playsinline', 'webkit-playsinline');
   video.setAttribute('crossorigin', 'anonymous');
   
   // Create object URL for the uploaded file

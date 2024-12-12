@@ -25,6 +25,8 @@ console.log("Mobile?: "+isMobileFlag);
 
 // let userVideo = document.getElementById('userVideo');
 let defaultVideo = document.getElementById('defaultVideo');
+let defaultVideoWidth = 480;
+let defaultVideoHeight = 848;
 
 if (!gl) {
   alert('WebGL not supported');
@@ -546,6 +548,27 @@ function useDefaultVideo() {
   // };
 }
 
+function startDefaultVideo(){
+  if(animationPlayToggle==true){
+      playAnimationToggle = false;
+      cancelAnimationFrame(animationRequest);
+      console.log("cancel animation");
+  }
+
+  canvasWidth = defaultVideoWidth;
+  canvasHeight = defaultVideoHeight;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
+  defaultVideo.play();
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  playAnimationToggle = true;
+
+  currentVideo = defaultVideo;
+  render();
+}
+
 function toggleAnimationPlay(){
   if(animationPlayToggle){
     currentVideo.pause();
@@ -584,4 +607,4 @@ document.addEventListener('keydown', function(event) {
 });
 
 //MAIN METHOD
-setInterval(useDefaultVideo(),1000);
+setInterval(startDefaultVideo(),1000);

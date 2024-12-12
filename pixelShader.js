@@ -511,12 +511,13 @@ function handleVideoUpload(file) {
   };
 }
 
-async function useDefaultVideo() {
+function useDefaultVideo() {
   cleanupVideoSource();
-  
+  console.log("start default video");
   // video.setAttribute('playsinline', 'playsinline');
   // video.setAttribute('webkit-playsinline', 'webkit-playsinline');
   defaultVideo.setAttribute('crossorigin', 'anonymous');
+
   if(isMobileFlag){
     video.setAttribute('playsinline', '');  // Required for iOS
     video.setAttribute('webkit-playsinline', '');
@@ -527,28 +528,21 @@ async function useDefaultVideo() {
   // Create object URL for the uploaded file
   // const objectURL = URL.createObjectURL(file);
   // video.src = objectURL;
-  defaultVideo.loop = true;
+  // defaultVideo.loop = true;
 
-  // Wait for video to be ready
-  await new Promise((resolve) => {
-    defaultVideo.onloadedmetadata = () => {
-      defaultVideo.play().then(() => resolve());
-      };
-  });
-  
   // Set up video loading handlers
-  // defaultVideo.onloadedmetadata = () => {
+  defaultVideo.onloadedmetadata = () => {
       canvas.width = defaultVideo.videoWidth;
       canvas.height = defaultVideo.videoHeight;
       gl.viewport(0, 0, canvas.width, canvas.height);
-  // };
+      defaultVideo.play();
+      currentVideo = defaultVideo;
+      render();
+  };
   
   // Wait for video to be loaded before playing
   // defaultVideo.oncanplay = () => {
-      defaultVideo.play();
-      currentVideo = defaultVideo;
-      // animationRequest = render(currentVideo);
-      render();
+
   // };
 }
 
@@ -590,4 +584,4 @@ document.addEventListener('keydown', function(event) {
 });
 
 //MAIN METHOD
-useDefaultVideo();
+setInterval(useDefaultVideo(),1000);

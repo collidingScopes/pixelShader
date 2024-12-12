@@ -7,6 +7,7 @@ Write about section, footer section, site OG tags
 Clean up code / remove commented out code
 Review CSS / page layout / margins
 Mobile functionality testing
+Rename page title, github repo, etc...
 */
 
 // DOM Elements
@@ -510,8 +511,8 @@ function useDefaultVideo() {
   cleanupVideoSource();
   
   const video = document.querySelector('#defaultVideo');
-  video.setAttribute('playsinline', '');
-  video.setAttribute('webkit-playsinline', '');
+  video.setAttribute('playsinline', 'playsinline');
+  video.setAttribute('webkit-playsinline', 'webkit-playsinline');
   video.setAttribute('crossorigin', 'anonymous');
   
   // Create object URL for the uploaded file

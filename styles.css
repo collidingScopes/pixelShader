@@ -1,109 +1,217 @@
-body {
+html, body {
     margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    padding: 0;
     align-items: center;
-    background: #1a1a1a;
+    background-color: #151632;
     color: white;
-    font-family: Arial, sans-serif;
-    padding: 20px;
+    font-size: 16px;
+    font-family: Helvetica;
+    overflow-x: hidden;
+}
+
+#gui {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: black;
+  opacity: 0.9;
+  margin: 0;
+  z-index: 10;
+  float: right;
+}
+
+.dg {
+  margin: 0 !important;
+}
+
+.closed{
+  height: 0px;
+}
+
+.close-button {
+  font-size: 1.2em;
+  font-weight: bold;
+  background-color: rgb(9, 81, 99) !important;
 }
 
 .container {
+    box-sizing: border-box;
     max-width: 1200px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+    width: 100vw;
     align-items: center;
-    gap: 20px;
-}
-
-.controls {
-    width: 100%;
-    max-width: 800px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    display: grid;
-    gap: 15px;
-}
-
-.control-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.control-group label {
-    min-width: 120px;
-}
-
-select, input[type="range"] {
-    flex: 1;
-    padding: 8px;
-    border-radius: 4px;
-}
-
-select {
-    background: #333;
-    color: white;
-    border: 1px solid #555;
-}
-
-input[type="range"] {
-    background: transparent;
-}
-
-.value-display {
-    min-width: 50px;
-    text-align: right;
+    display: block;
+    margin: 0 auto;
+    padding: 0;
+    text-align: center;
+    justify-content: center;
+    /* display: flex; */
+    /* flex-direction: column; */
+    /* gap: 20px; */
 }
 
 canvas {
-    max-width: 100%;
-    /* border-radius: 8px; */
-    background: #000;
+  max-width: 100vw;
+  background: #000;
+  margin: 0 auto;
+  padding: 0;
+}
+
+#introDiv{
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+  background-color: #2D0A3D;
+  padding-top: 2px;
+  padding-bottom: 10px;
+  text-align: center;
+  color:white;
+}
+
+#aboutText{
+  font-size: 32px;
+  font-family: "Permanent Marker";
+  font-weight: 400;
+  font-style: normal;
+  display:block;
+  padding: 0;
+  margin: 0;
+}
+
+#notesDiv{
+  width:100vw;
+  box-sizing: border-box;
+  /*overflow: hidden;*/
+  /* padding: 10px; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /*border-top: 5px solid #581845;*/
+  background-color: #151632;
+  color: white;
+}
+
+#textBox {
+  min-width: 350px;
+  max-width: 75vw;
+}
+
+li {
+  margin-bottom: 6px;
+}
+
+#linksDiv{
+  background-color: #faebf6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+h2 {
+  font-size: 40px;
+  font-family: Helvetica;
+}
+
+#videoRecordingMessageDiv{
+  background: rgba(0, 0, 0, 0.75);
+  color:white;
+  font-family: helvetica;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.sticky-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* Styling for table with github and social links */
+
+#infoMenuTable td {
+  text-align:center;
+  border: 0;
+  padding: 20px;
+}
+
+#infoMenuTable{
+  table-layout: fixed;
+  margin: 0px;
+}
+
+a, a:visited{
+  color:rgb(161, 50, 154);
+}
+
+.socialMediaButton{
+  color:rgb(161, 50, 154);
+  font-size: 26px;
+  margin: 0;
+  padding: 4px;
+  border: none;
+  max-width: 50px;
+  max-height: 50px;
+  background-color: transparent;
+}
+
+#buyMeACoffeeButton {
+  font-size: 10px;
+}
+
+/* Styling for image upload field */
+input, select {
+  cursor: pointer;
 }
 
 input[type="file"] {
-    display: none;
+  /*display: none;*/
+  position:absolute;
+  top:-9999px;
+}
+.custom-file-upload {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #226f63;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1em;
+  font-family: Helvetica;
+  display: inline-block;
+  padding: 8px;
+  cursor: pointer;
+  margin-left: 3px;
+  margin-right: 2px;
 }
 
-.source-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+button {
+  padding: 6px;
+  font-weight: bold;
+  font-size: 1em;
+
+  margin: 10px 3px 10px 3px;
+  /*margin-left: 3px;
+  margin-right: 3px;*/
+
+  border: 3px solid #79e2d2;
+  border-radius: 6px;
+  background-color: #ffffff;
+
+  cursor: pointer;
 }
 
-.file-name {
-    color: #aaa;
-    font-size: 0.9em;
-    margin-left: 10px;
+table {
+  border-collapse: collapse;
+  margin:auto;
 }
 
-@media (max-width: 768px) {
-  .controls {
-      padding: 15px;
-      gap: 10px;
-  }
-
-  .control-group {
-      flex-direction: column;
-      align-items: stretch;
-  }
-
-  .control-group label {
-      min-width: auto;
-      margin-bottom: 5px;
-  }
-
-  .value-display {
-      position: absolute;
-      right: 15px;
-  }
-
-  input[type="range"] {
-      width: 100%;
-  }
+td {
+  max-width: 250px;
 }
+

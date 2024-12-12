@@ -1,91 +1,85 @@
+/*
+To do:
+Review entire code base to understand functionality
+Choose better default video (Tokyo train video?)
+Add more color palettes
+Write about section, footer section, site OG tags
+Clean up code / remove commented out code
+Review CSS / page layout / margins
+Mobile functionality testing
+*/
+
 // DOM Elements
 const canvas = document.getElementById('canvas');
-const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-const paletteSelect = document.getElementById('palette');
-const pixelSizeInput = document.getElementById('pixelSize');
-const pixelSizeDisplay = document.getElementById('pixelSizeDisplay');
-const videoInput = document.getElementById('videoInput');
+const gl = canvas.getContext('webgl', {preserveDrawingBuffer: false}) || canvas.getContext('experimental-webgl');
+const fileInput = document.getElementById('fileInput');
 const inputToggle = document.getElementById('inputToggle');
-
 let currentVideo = null;
 let isWebcam = true;
-
-const cameraSelect = document.getElementById('cameraSelect');
-
+let animationPlayToggle = false;
+let animationRequest;
 let isMobileFlag = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-console.log(isMobileFlag)
+console.log("Mobile?: "+isMobileFlag);
 
-// Show camera toggle only when using mobile device
-if (isMobileFlag) {
-    document.getElementById('cameraToggle').style.display = 'flex';
+if (!gl) {
+  alert('WebGL not supported');
+  throw new Error('WebGL not supported');
 }
 
-cameraSelect.addEventListener('change', async () => {
-    if (isWebcam) {
-        cleanupVideoSource();
-        const video = await setupWebcam(cameraSelect.value);
-        currentVideo = video;
-        render(video);
-    }
-});
-
 // Event listeners for controls
-
-videoInput.addEventListener('change', (e) => {
+fileInput.addEventListener('change', (e) => {
+  cleanupVideoSource();
   if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      document.getElementById('fileName').textContent = file.name;
+      // document.getElementById('fileName').textContent = file.name;
       handleVideoUpload(file);
   }
 });
 
-pixelSizeInput.addEventListener('input', (e) => {
-    pixelSizeDisplay.textContent = e.target.value;
-});
+//add gui
+let obj = {
+  pixelSize: 8,
+  colorPalette: "field",
+};
 
-inputToggle.addEventListener('change', async () => {
-  isWebcam = inputToggle.value === 'webcam';
-  cleanupVideoSource();
-  
-  if (isWebcam) {
-      setupWebcam().then(video => {
-          currentVideo = video;
-          render(video);
-      }).catch(err => {
-          console.error('Failed to start webcam:', err);
-      });
-  } else {
-      videoInput.click();
-  }
-});
+let gui = new dat.gui.GUI( { autoPlace: false } );
+// gui.close();
+let guiOpenToggle = true;
 
-/*
-videoInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.loop = true;
-        video.onloadedmetadata = () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        };
-        video.play();
-        currentVideo = video;
-        render(video);
-    }
-});
-*/
+obj['useWebcam'] = function () {
+  useWebcam();
+};
+gui.add(obj, 'useWebcam').name('Use Webcam');
 
-if (!gl) {
-    alert('WebGL not supported');
-    throw new Error('WebGL not supported');
-}
+obj['uploadVideo'] = function () {
+  fileInput.click();
+};
+gui.add(obj, 'uploadVideo').name('Upload Video');
+
+gui.add(obj, "pixelSize").min(1).max(32).step(1).name('Pixel Size');
+gui.add(obj, "colorPalette", ["field","underwater","forest","flame","dusk","grayscale"]);
+
+obj['pausePlay'] = function () {
+  toggleAnimationPlay();
+};
+gui.add(obj, 'pausePlay').name("Pause/Play (p)");
+
+obj['saveImage'] = function () {
+  saveImage();
+};
+gui.add(obj, 'saveImage').name("Save Image (s)");
+
+obj['saveVideo'] = function () {
+  toggleVideoRecord();
+};
+gui.add(obj, 'saveVideo').name("Video Export (v)");
+
+customContainer = document.getElementById( 'gui' );
+customContainer.appendChild(gui.domElement);
 
 // Define color palettes
 const palettes = {
-    landscape: [
+    field: [
         [0.950, 0.950, 0.950], // White clouds
         [0.529, 0.808, 0.922], // Sky blue
         [0.275, 0.510, 0.706], // Dark blue
@@ -197,7 +191,7 @@ const fragmentShaderSource = `
         float dist;
 
         if (paletteChoice == 0) {
-            // Landscape palette
+            // field palette
             dist = distance(color, c0_0); if(dist < minDist) { minDist = dist; closestColor = c0_0; }
             dist = distance(color, c0_1); if(dist < minDist) { minDist = dist; closestColor = c0_1; }
             dist = distance(color, c0_2); if(dist < minDist) { minDist = dist; closestColor = c0_2; }
@@ -336,15 +330,6 @@ const resolutionLocation = gl.getUniformLocation(program, 'resolution');
 const pixelSizeLocation = gl.getUniformLocation(program, 'pixelSize');
 const paletteChoiceLocation = gl.getUniformLocation(program, 'paletteChoice');
 
-/*
-const texture = gl.createTexture();
-gl.bindTexture(gl.TEXTURE_2D, texture);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-*/
-
 const texture = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, texture);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -381,7 +366,6 @@ async function setupWebcam() {
   try {
       const constraints = {
           video: {
-              facingMode: "user",  // Start with front camera for testing
               width: { ideal: 1280 },
               height: { ideal: 720 }
           }
@@ -409,21 +393,27 @@ async function setupWebcam() {
   }
 }
 
-function render(video) {
-  if (!video || video.readyState < video.HAVE_CURRENT_DATA) {
-      requestAnimationFrame(() => render(video));
-      return;
-  }
+function render() {
+  drawScene();
+  animationRequest = requestAnimationFrame(render);
+}
 
-  if (!video.paused && !video.ended) {
+function drawScene(){
+  // if (!currentVideo || currentVideo.readyState < currentVideo.HAVE_CURRENT_DATA) {
+  //   // animationRequest = requestAnimationFrame(() => render(video));
+  //   return;
+  // }
+
+  if (!currentVideo.paused) {
+      animationPlayToggle = true;
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       
       try {
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, currentVideo);
       } catch (e) {
           console.error('Error updating texture:', e);
-          requestAnimationFrame(() => render(video));
+          // animationRequest = requestAnimationFrame(() => render(video));
           return;
       }
 
@@ -431,11 +421,11 @@ function render(video) {
 
       // Set uniforms
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-      gl.uniform1f(pixelSizeLocation, parseFloat(pixelSizeInput.value));
+      gl.uniform1f(pixelSizeLocation, parseFloat(obj.pixelSize));
 
       let paletteValue;
-      switch(paletteSelect.value) {
-          case 'landscape': paletteValue = 0; break;
+      switch(obj.colorPalette) {
+          case 'field': paletteValue = 0; break;
           case 'underwater': paletteValue = 1; break;
           case 'forest': paletteValue = 2; break;
           case 'flame': paletteValue = 3; break;
@@ -455,8 +445,6 @@ function render(video) {
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
-
-  requestAnimationFrame(() => render(video));
 }
 
 // Handle video source cleanup
@@ -477,16 +465,17 @@ function cleanupVideoSource() {
   }
 }
 
-// Initialize with webcam by default
-setupWebcam().then(video => {
-    currentVideo = video;
-    render(video);
-}).catch(err => {
-    console.error('Failed to start webcam:', err);
-});
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', cleanupVideoSource);
+function useWebcam(){
+  cleanupVideoSource();
+  setupWebcam().then(video => {
+      currentVideo = video;
+      animationPlayToggle = true;
+      // animationRequest = render(video);
+      render();
+  }).catch(err => {
+      console.error('Failed to start webcam:', err);
+  });
+}
 
 function handleVideoUpload(file) {
   cleanupVideoSource();
@@ -512,6 +501,76 @@ function handleVideoUpload(file) {
   video.oncanplay = () => {
       video.play();
       currentVideo = video;
-      render(video);
+      // animationRequest = render(currentVideo);
+      render();
   };
 }
+
+function useDefaultVideo() {
+  cleanupVideoSource();
+  
+  const video = document.querySelector('#defaultVideo');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  video.setAttribute('crossorigin', 'anonymous');
+  
+  // Create object URL for the uploaded file
+  // const objectURL = URL.createObjectURL(file);
+  // video.src = objectURL;
+  video.loop = true;
+  
+  // Set up video loading handlers
+  video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  
+  // Wait for video to be loaded before playing
+  video.oncanplay = () => {
+      video.play();
+      currentVideo = video;
+      // animationRequest = render(currentVideo);
+      render();
+  };
+}
+
+function toggleAnimationPlay(){
+  if(animationPlayToggle){
+    currentVideo.pause();
+    cancelAnimationFrame(animationRequest);
+  } else {
+    currentVideo.play();
+    // animationRequest = render(currentVideo);
+    render();
+  }
+  animationPlayToggle = !animationPlayToggle;
+}
+
+function toggleGUI(){
+  if(guiOpenToggle == false){
+      gui.open();
+      guiOpenToggle = true;
+  } else {
+      gui.close();
+      guiOpenToggle = false;
+  }
+}
+  
+//shortcut hotkey presses
+document.addEventListener('keydown', function(event) {
+  
+  if (event.key === 's') {
+      saveImage();
+  } else if (event.key === 'v') {
+      toggleVideoRecord();
+  } else if (event.key === 'o') {
+      toggleGUI();
+  } else if (event.key === 'p') {
+    toggleAnimationPlay();
+  }
+  
+});
+
+//MAIN METHOD
+useDefaultVideo();

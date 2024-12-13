@@ -1,9 +1,3 @@
-/*
-To do:
-Write about section, footer section, site OG tags
-Rename page title, github repo, etc...
-*/
-
 // DOM Elements
 const canvas = document.getElementById('canvas');
 const gl = canvas.getContext('webgl', {preserveDrawingBuffer: false}) || canvas.getContext('experimental-webgl');
@@ -48,7 +42,7 @@ obj['uploadVideo'] = function () {
 gui.add(obj, 'uploadVideo').name('Upload Video');
 
 gui.add(obj, "pixelSize").min(1).max(32).step(1).name('Pixel Size');
-gui.add(obj, "colorPalette", ["field","underwater","forest","flame","dusk","grayscale","vampire"]);
+gui.add(obj, "colorPalette", ["field","underwater","forest","flame","dusk","grayscale","vampire","ink"]);
 
 obj['pausePlay'] = function () {
   toggleAnimationPlay();
@@ -153,6 +147,18 @@ const palettes = {
       [1.000, 0.392, 0.275],  // Orange-red glow
       [1.000, 0.627, 0.431],  // Light orange highlight
       [1.000, 0.824, 0.667]   // Pale orange glow
+    ],
+    ink: [
+      [0.031, 0.031, 0.031],  // Deep black background
+      [0.118, 0.098, 0.118],  // Dark purple-gray (shadows)
+      [0.275, 0.157, 0.196],  // Dark burgundy (clothing)
+      [0.431, 0.196, 0.235],  // Medium red (mushroom cap)
+      [0.784, 0.275, 0.314],  // Bright red (mushroom highlights)
+      [0.392, 0.275, 0.196],  // Brown (staff/leather)
+      [0.549, 0.510, 0.431],  // Light gray (mushroom underside)
+      [0.627, 0.706, 0.235],  // Bright green (leaves/moss)
+      [0.824, 0.824, 0.824],  // White (highlights)
+      [1.000, 1.000, 1.000]   // Pure white (spots/outline)
     ],
 };
 
@@ -265,7 +271,7 @@ const fragmentShaderSource = `
             dist = distance(color, c5_7); if(dist < minDist) { minDist = dist; closestColor = c5_7; }
             dist = distance(color, c5_8); if(dist < minDist) { minDist = dist; closestColor = c5_8; }
             dist = distance(color, c5_9); if(dist < minDist) { minDist = dist; closestColor = c5_9; }
-        } else {
+        } else if (paletteChoice == 6) {
             // Vampire palette
             dist = distance(color, c6_0); if(dist < minDist) { minDist = dist; closestColor = c6_0; }
             dist = distance(color, c6_1); if(dist < minDist) { minDist = dist; closestColor = c6_1; }
@@ -277,6 +283,18 @@ const fragmentShaderSource = `
             dist = distance(color, c6_7); if(dist < minDist) { minDist = dist; closestColor = c6_7; }
             dist = distance(color, c6_8); if(dist < minDist) { minDist = dist; closestColor = c6_8; }
             dist = distance(color, c6_9); if(dist < minDist) { minDist = dist; closestColor = c6_9; }
+        } else {
+            // Ink palette
+            dist = distance(color, c7_0); if(dist < minDist) { minDist = dist; closestColor = c7_0; }
+            dist = distance(color, c7_1); if(dist < minDist) { minDist = dist; closestColor = c7_1; }
+            dist = distance(color, c7_2); if(dist < minDist) { minDist = dist; closestColor = c7_2; }
+            dist = distance(color, c7_3); if(dist < minDist) { minDist = dist; closestColor = c7_3; }
+            dist = distance(color, c7_4); if(dist < minDist) { minDist = dist; closestColor = c7_4; }
+            dist = distance(color, c7_5); if(dist < minDist) { minDist = dist; closestColor = c7_5; }
+            dist = distance(color, c7_6); if(dist < minDist) { minDist = dist; closestColor = c7_6; }
+            dist = distance(color, c7_7); if(dist < minDist) { minDist = dist; closestColor = c7_7; }
+            dist = distance(color, c7_8); if(dist < minDist) { minDist = dist; closestColor = c7_8; }
+            dist = distance(color, c7_9); if(dist < minDist) { minDist = dist; closestColor = c7_9; }
         }
         
         return closestColor;
@@ -443,6 +461,7 @@ function drawScene(){
           case 'dusk': paletteValue = 4; break;
           case 'grayscale': paletteValue = 5; break;
           case 'vampire': paletteValue = 6; break;
+          case 'ink': paletteValue = 7; break;
           default: paletteValue = 0;
       }
       gl.uniform1i(paletteChoiceLocation, paletteValue);

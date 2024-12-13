@@ -55,13 +55,19 @@ fileInput.addEventListener('change', (e) => {
 
       });
       
-      // Wait for video to be loaded before playing
-      userVideo.oncanplay = () => {
-          userVideo.play();
-          currentVideo = userVideo;
-          // animationRequest = render(currentVideo);
-          render();
-      };
+      // // Wait for video to be loaded before playing
+      // userVideo.oncanplay = () => {
+      //     userVideo.play();
+      //     currentVideo = userVideo;
+      //     // animationRequest = render(currentVideo);
+      //     render();
+      // };
+
+      setTimeout(function(){
+        userVideo.play();
+        currentVideo = userVideo;
+        render();
+      },1000);
   }
     
 });

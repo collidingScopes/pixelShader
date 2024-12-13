@@ -30,7 +30,7 @@ if (!gl) {
 //add gui
 let obj = {
   pixelSize: 5,
-  colorPalette: "underwater",
+  colorPalette: "vampire",
 };
 
 let gui = new dat.gui.GUI( { autoPlace: false } );
@@ -48,7 +48,7 @@ obj['uploadVideo'] = function () {
 gui.add(obj, 'uploadVideo').name('Upload Video');
 
 gui.add(obj, "pixelSize").min(1).max(32).step(1).name('Pixel Size');
-gui.add(obj, "colorPalette", ["field","underwater","forest","flame","dusk","grayscale"]);
+gui.add(obj, "colorPalette", ["field","underwater","forest","flame","dusk","grayscale","vampire"]);
 
 obj['pausePlay'] = function () {
   toggleAnimationPlay();
@@ -141,7 +141,19 @@ const palettes = {
         [0.778, 0.778, 0.778],
         [0.889, 0.889, 0.889],
         [1.000, 1.000, 1.000]  // White
-    ]
+    ],
+    vampire: [
+      [0.059, 0.063, 0.082],  // Deep dark background
+      [0.118, 0.125, 0.157],  // Dark blue-gray
+      [0.196, 0.208, 0.255],  // Light blue highlights
+      [0.157, 0.165, 0.196],  // Medium blue-gray
+      [0.392, 0.059, 0.078],  // Dark red
+      [0.784, 0.118, 0.157],  // Medium red
+      [0.902, 0.235, 0.196],  // Bright red
+      [1.000, 0.392, 0.275],  // Orange-red glow
+      [1.000, 0.627, 0.431],  // Light orange highlight
+      [1.000, 0.824, 0.667]   // Pale orange glow
+    ],
 };
 
 // Helper function to generate shader color definitions
@@ -241,7 +253,7 @@ const fragmentShaderSource = `
             dist = distance(color, c4_7); if(dist < minDist) { minDist = dist; closestColor = c4_7; }
             dist = distance(color, c4_8); if(dist < minDist) { minDist = dist; closestColor = c4_8; }
             dist = distance(color, c4_9); if(dist < minDist) { minDist = dist; closestColor = c4_9; }
-        } else {
+        } else if (paletteChoice == 5) {
             // Grayscale palette
             dist = distance(color, c5_0); if(dist < minDist) { minDist = dist; closestColor = c5_0; }
             dist = distance(color, c5_1); if(dist < minDist) { minDist = dist; closestColor = c5_1; }
@@ -253,6 +265,18 @@ const fragmentShaderSource = `
             dist = distance(color, c5_7); if(dist < minDist) { minDist = dist; closestColor = c5_7; }
             dist = distance(color, c5_8); if(dist < minDist) { minDist = dist; closestColor = c5_8; }
             dist = distance(color, c5_9); if(dist < minDist) { minDist = dist; closestColor = c5_9; }
+        } else {
+            // Vampire palette
+            dist = distance(color, c6_0); if(dist < minDist) { minDist = dist; closestColor = c6_0; }
+            dist = distance(color, c6_1); if(dist < minDist) { minDist = dist; closestColor = c6_1; }
+            dist = distance(color, c6_2); if(dist < minDist) { minDist = dist; closestColor = c6_2; }
+            dist = distance(color, c6_3); if(dist < minDist) { minDist = dist; closestColor = c6_3; }
+            dist = distance(color, c6_4); if(dist < minDist) { minDist = dist; closestColor = c6_4; }
+            dist = distance(color, c6_5); if(dist < minDist) { minDist = dist; closestColor = c6_5; }
+            dist = distance(color, c6_6); if(dist < minDist) { minDist = dist; closestColor = c6_6; }
+            dist = distance(color, c6_7); if(dist < minDist) { minDist = dist; closestColor = c6_7; }
+            dist = distance(color, c6_8); if(dist < minDist) { minDist = dist; closestColor = c6_8; }
+            dist = distance(color, c6_9); if(dist < minDist) { minDist = dist; closestColor = c6_9; }
         }
         
         return closestColor;
@@ -418,6 +442,7 @@ function drawScene(){
           case 'flame': paletteValue = 3; break;
           case 'dusk': paletteValue = 4; break;
           case 'grayscale': paletteValue = 5; break;
+          case 'vampire': paletteValue = 6; break;
           default: paletteValue = 0;
       }
       gl.uniform1i(paletteChoiceLocation, paletteValue);

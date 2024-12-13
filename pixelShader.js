@@ -1,14 +1,7 @@
 /*
 To do:
-Review entire code base to understand functionality
-Choose better default video (Tokyo train video -- downsize and optimize first)
-Add more color palettes
 Write about section, footer section, site OG tags
-Clean up code / remove commented out code
-Review CSS / page layout / margins
-Fix upload video on mobile (follow example from ASCII)
 Rename page title, github repo, etc...
-Upon video record, rewind user video and default video to 0 time (see ASCII example)
 */
 
 // DOM Elements
@@ -25,57 +18,19 @@ console.log("Mobile?: "+isMobileFlag);
 
 let userVideo = document.getElementById('userVideo');
 let defaultVideo = document.getElementById('defaultVideo');
-let defaultVideoWidth = 480;
-let defaultVideoHeight = 848;
+let defaultVideoWidth = 900;
+let defaultVideoHeight = 504;
+let maxCanvasWidth = 1200;
 
 if (!gl) {
   alert('WebGL not supported');
   throw new Error('WebGL not supported');
 }
 
-// Event listeners for controls
-fileInput.addEventListener('change', (e) => {
-  cleanupVideoSource();
-  if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // document.getElementById('fileName').textContent = file.name;
-      //handleVideoUpload(file);
-
-      const url = URL.createObjectURL(file);
-      userVideo.src = url;
-      userVideo.addEventListener('loadedmetadata', () => {
-          
-          userVideo.width = userVideo.videoWidth;
-          userVideo.height = userVideo.videoHeight;
-          console.log("user video width/height: "+userVideo.width+", "+userVideo.height);
-
-          canvas.width = userVideo.width;
-          canvas.height = userVideo.height;
-          gl.viewport(0, 0, canvas.width, canvas.height);
-
-      });
-      
-      // // Wait for video to be loaded before playing
-      // userVideo.oncanplay = () => {
-      //     userVideo.play();
-      //     currentVideo = userVideo;
-      //     // animationRequest = render(currentVideo);
-      //     render();
-      // };
-
-      setTimeout(function(){
-        userVideo.play();
-        currentVideo = userVideo;
-        render();
-      },1000);
-  }
-    
-});
-
 //add gui
 let obj = {
-  pixelSize: 8,
-  colorPalette: "field",
+  pixelSize: 5,
+  colorPalette: "underwater",
 };
 
 let gui = new dat.gui.GUI( { autoPlace: false } );
@@ -435,10 +390,6 @@ function render() {
 }
 
 function drawScene(){
-  // if (!currentVideo || currentVideo.readyState < currentVideo.HAVE_CURRENT_DATA) {
-  //   // animationRequest = requestAnimationFrame(() => render(video));
-  //   return;
-  // }
 
   if (!currentVideo.paused) {
       animationPlayToggle = true;
@@ -513,69 +464,37 @@ function useWebcam(){
   });
 }
 
-function handleVideoUpload(file) {
+fileInput.addEventListener('change', (e) => {
   cleanupVideoSource();
-  
-  const video = document.createElement('video');
-  video.setAttribute('playsinline', '');
-  video.setAttribute('webkit-playsinline', '');
-  video.setAttribute('crossorigin', 'anonymous');
-  
-  // Create object URL for the uploaded file
-  const objectURL = URL.createObjectURL(file);
-  video.src = objectURL;
-  video.loop = true;
-  
-  // Set up video loading handlers
-  video.onloadedmetadata = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-  };
-  
-  // Wait for video to be loaded before playing
-  video.oncanplay = () => {
-      video.play();
-      currentVideo = video;
-      // animationRequest = render(currentVideo);
-      render();
-  };
-}
+  if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
+      userVideo.src = url;
+      userVideo.addEventListener('loadedmetadata', () => {
+          
+          userVideo.width = userVideo.videoWidth;
+          userVideo.height = userVideo.videoHeight;
+          console.log("user video width/height: "+userVideo.width+", "+userVideo.height);
 
-function useDefaultVideo() {
-  cleanupVideoSource();
-  console.log("start default video");
-  // video.setAttribute('playsinline', 'playsinline');
-  // video.setAttribute('webkit-playsinline', 'webkit-playsinline');
-  defaultVideo.setAttribute('crossorigin', 'anonymous');
+          let canvasWidth = Math.min(userVideo.videoWidth, maxCanvasWidth);
+          let canvasHeight = Math.floor(canvasWidth * (userVideo.videoHeight / userVideo.videoWidth)); 
+  
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+          console.log("canvas width/height: "+canvas.width+", "+canvas.height);
 
-  if(isMobileFlag){
-    video.setAttribute('playsinline', '');  // Required for iOS
-    video.setAttribute('webkit-playsinline', '');
-    video.setAttribute('autoplay', '');
-    video.style.transform = 'scaleX(-1)';  // Mirror the video
+          gl.viewport(0, 0, canvas.width, canvas.height);
+
+      });
+
+      setTimeout(function(){
+        userVideo.play();
+        currentVideo = userVideo;
+        render();
+      },1000);
   }
-  
-  // Create object URL for the uploaded file
-  // const objectURL = URL.createObjectURL(file);
-  // video.src = objectURL;
-  // defaultVideo.loop = true;
-
-  // Set up video loading handlers
-  defaultVideo.onloadedmetadata = () => {
-      canvas.width = defaultVideo.videoWidth;
-      canvas.height = defaultVideo.videoHeight;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      defaultVideo.play();
-      currentVideo = defaultVideo;
-      render();
-  };
-  
-  // Wait for video to be loaded before playing
-  // defaultVideo.oncanplay = () => {
-
-  // };
-}
+    
+});
 
 function startDefaultVideo(){
   if(animationPlayToggle==true){
@@ -584,8 +503,8 @@ function startDefaultVideo(){
       console.log("cancel animation");
   }
 
-  canvasWidth = defaultVideoWidth;
-  canvasHeight = defaultVideoHeight;
+  let canvasWidth = defaultVideoWidth;
+  let canvasHeight = defaultVideoHeight;
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 

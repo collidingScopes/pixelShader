@@ -1,17 +1,27 @@
-This is a generative art project which turns images into "force-field" particle animations in real-time. The animation effect uses a force repulsion / self-healing effect.
+Video-to-Pixel-Art
+=====
 
-Live demo: https://collidingscopes.github.io/forcefield/
-
-Upload your own image, open the GUI controls to change the animation parameters, and then use your mouse or touchscreen to activate the animation.
-
-This project is open source (offered under MIT license), so feel free to use it however you wish.
-
-If you liked this and are feeling generous, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!
+<p>Turn videos into pixel art! Use your webcam feed or upload a video, then use the controls to adjust the color palette and pixel size.</p>
+<img src="assets/ipodAd.gif">
+<p>All processing is done in real-time within your browser, using javascript / webgl shaders / html canvas (see github repo linked below).</p>
+<p>You can export your creations as images or videos to save / share your work.</p>
+<p>This tool is completely free, open source (MIT license), without any paywalls or premium options. You are welcome to use it for personal or commercial purposes.</p>
+<p>If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!</p>
 
 <a href="https://www.buymeacoffee.com/stereoDrift" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee"></a>
 
-This project is coded using Javascript, HTML, and CSS. Video creation and encoding is done using mp4 muxer.
+<p>If the video export feature does not work for you, please try a free screen-recording tool such as OBS Studio.</p>
+<p>I do not have access to any of the videos that you upload here, as all processing is done "client-side" (i.e., <b>no videos or images are saved/stored by me — they stay on your computer only</b>).</p>
+<p>If you enjoyed this, you may be interested in my other free / open source art projects:</p>
+<ul>
+<li><a href="https://collidingScopes.github.io/ascii" target="_blank" rel="noopener">Video-to-ASCII</a>: turn videos into ASCII pixel art</li>
+<li><a href="https://collidingScopes.github.io/shimmer" target="_blank" rel="noopener">Shape Shimmer</a>: turn photos into funky wave animations</li>
+<li><a href="https://collidingScopes.github.io" target="_blank" rel="noopener">Colliding Scopes</a>: turn photos into kaleidoscope animations</li>
+<li><a href="https://collidingScopes.github.io/forcefield" target="_blank" rel="noopener">Force-Field Animation</a>: turn photos into particle animations</li>
+</ul>
 
-Enormous thanks and credit to the project <a href="https://aijs.io/project?user=Tezumie&project=1-Million-Particles" target="_blank" rel="noopener">"1 million particles" by Tezumie</a>, which provided the code foundation for the particle repulsion animation.
+<p>Feel free to reach out to discuss, ask questions, or to share your creations! The animations can be easily uploaded to instagram or otherwise -- you can tag me <a href="https://www.instagram.com/stereo.drift/" target="_blank" rel="noopener">@stereo.drift</a> :)</p>
 
-Feel free to reach out to discuss, ask questions, or to share your creations! The animations can be easily uploaded to instagram or otherwise -- you can tag me <a href="https://www.instagram.com/stereo.drift/" target="_blank" rel="noopener">@stereo.drift</a> :)
+License
+=======
+This is an open source project provided under an <a href="https://opensource.org/license/MIT">MIT license</a>

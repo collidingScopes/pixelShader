@@ -60,6 +60,10 @@ function saveImage(){
 }
 
 function toggleVideoRecord(){
+
+  userVideo.currentTime = 0;
+  defaultVideo.currentTime = 0;
+
   if(recordVideoState == false){
     recordVideoState = true;
     chooseRecordingFunction();

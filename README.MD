@@ -3,7 +3,7 @@ Video-to-Pixel-Art
 
 <p>Turn videos into pixel art! Use your webcam feed or upload a video, then use the controls to adjust the color palette and pixel size.</p>
 <img src="assets/ipodAd.gif">
-<p>All processing is done in real-time within your browser, using javascript / webgl shaders / html canvas (see github repo linked below).</p>
+<p>All processing is done in real-time within your browser, using javascript / webgl shaders / html canvas.</p>
 <p>You can export your creations as images or videos to save / share your work.</p>
 <p>This tool is completely free, open source (MIT license), without any paywalls or premium options. You are welcome to use it for personal or commercial purposes.</p>
 <p>If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!</p>

@@ -1,12 +1,12 @@
 /*
 To do:
 Review entire code base to understand functionality
-Choose better default video (Tokyo train video?)
+Choose better default video (Tokyo train video -- downsize and optimize first)
 Add more color palettes
 Write about section, footer section, site OG tags
 Clean up code / remove commented out code
 Review CSS / page layout / margins
-Mobile functionality testing
+Fix upload video on mobile (follow example from ASCII)
 Rename page title, github repo, etc...
 Upon video record, rewind user video and default video to 0 time (see ASCII example)
 */
@@ -23,7 +23,7 @@ let animationRequest;
 let isMobileFlag = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 console.log("Mobile?: "+isMobileFlag);
 
-// let userVideo = document.getElementById('userVideo');
+let userVideo = document.getElementById('userVideo');
 let defaultVideo = document.getElementById('defaultVideo');
 let defaultVideoWidth = 480;
 let defaultVideoHeight = 848;
@@ -39,8 +39,31 @@ fileInput.addEventListener('change', (e) => {
   if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       // document.getElementById('fileName').textContent = file.name;
-      handleVideoUpload(file);
+      //handleVideoUpload(file);
+
+      const url = URL.createObjectURL(file);
+      userVideo.src = url;
+      userVideo.addEventListener('loadedmetadata', () => {
+          
+          userVideo.width = userVideo.videoWidth;
+          userVideo.height = userVideo.videoHeight;
+          console.log("user video width/height: "+userVideo.width+", "+userVideo.height);
+
+          canvas.width = userVideo.width;
+          canvas.height = userVideo.height;
+          gl.viewport(0, 0, canvas.width, canvas.height);
+
+      });
+      
+      // Wait for video to be loaded before playing
+      userVideo.oncanplay = () => {
+          userVideo.play();
+          currentVideo = userVideo;
+          // animationRequest = render(currentVideo);
+          render();
+      };
   }
+    
 });
 
 //add gui

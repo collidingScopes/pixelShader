@@ -1,3 +1,10 @@
+/*
+To do:
+Add more palettes
+Add function / hotkey to randomize inputs
+Simplify color palette input / closest color distance functions
+*/
+
 // DOM Elements
 const canvas = document.getElementById('canvas');
 const gl = canvas.getContext('webgl', {preserveDrawingBuffer: false}) || canvas.getContext('experimental-webgl');
@@ -22,9 +29,12 @@ if (!gl) {
 }
 
 //add gui
+let paletteNames = ["field","underwater","forest","flame","dusk","grayscale","vampire","ink","galaxy","acid"];
+
 let obj = {
-  pixelSize: 5,
-  colorPalette: "vampire",
+  pixelSize: 6,
+  ditherFactor: 0.4,
+  colorPalette: "underwater",
 };
 
 let gui = new dat.gui.GUI( { autoPlace: false } );
@@ -42,7 +52,8 @@ obj['uploadVideo'] = function () {
 gui.add(obj, 'uploadVideo').name('Upload Video');
 
 gui.add(obj, "pixelSize").min(1).max(32).step(1).name('Pixel Size');
-gui.add(obj, "colorPalette", ["field","underwater","forest","flame","dusk","grayscale","vampire","ink"]);
+gui.add(obj, "ditherFactor").min(0).max(1).step(0.01).name('Dither Strength');
+gui.add(obj, "colorPalette", paletteNames);
 
 obj['pausePlay'] = function () {
   toggleAnimationPlay();
@@ -64,7 +75,7 @@ customContainer.appendChild(gui.domElement);
 
 // Define color palettes
 const palettes = {
-    field: [
+    0: [
         [0.950, 0.950, 0.950], // White clouds
         [0.529, 0.808, 0.922], // Sky blue
         [0.275, 0.510, 0.706], // Dark blue
@@ -76,7 +87,7 @@ const palettes = {
         [0.408, 0.302, 0.294], // Dark brown
         [0.216, 0.216, 0.216]  // Shadow
     ],
-    underwater: [
+    1: [
         [0.118, 0.471, 0.706], // Deep blue
         [0.173, 0.612, 0.620], // Teal
         [0.255, 0.757, 0.678], // Light teal
@@ -88,7 +99,7 @@ const palettes = {
         [0.925, 0.941, 0.945], // White
         [0.078, 0.110, 0.141]  // Dark blue
     ],
-    forest: [
+    2: [
         [0.133, 0.184, 0.133], // Dark green
         [0.255, 0.369, 0.196], // Mid green
         [0.475, 0.557, 0.286], // Light green
@@ -100,7 +111,7 @@ const palettes = {
         [0.871, 0.886, 0.894], // White
         [0.424, 0.459, 0.404]  // Gray green
     ],
-    flame: [
+    3: [
         [1.000, 0.439, 0.122], // Bright orange
         [0.961, 0.647, 0.263], // Light orange
         [1.000, 0.843, 0.000], // Sun yellow
@@ -112,7 +123,7 @@ const palettes = {
         [0.098, 0.098, 0.137], // Near black
         [0.835, 0.584, 0.310]  // Gold
     ],
-    dusk: [
+    4: [
         [0.039, 0.039, 0.078], // Night blue
         [0.118, 0.157, 0.275], // Deep blue
         [0.275, 0.196, 0.408], // Purple blue
@@ -124,19 +135,19 @@ const palettes = {
         [1.000, 1.000, 1.000], // White
         [0.557, 0.612, 0.722]  // Light blue
     ],
-    grayscale: [
+    5: [
         [0.000, 0.000, 0.000], // Black
-        [0.111, 0.111, 0.111],
-        [0.222, 0.222, 0.222],
-        [0.333, 0.333, 0.333],
-        [0.444, 0.444, 0.444],
-        [0.556, 0.556, 0.556],
-        [0.667, 0.667, 0.667],
-        [0.778, 0.778, 0.778],
-        [0.889, 0.889, 0.889],
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
+        [0.000, 0.000, 0.000], // Black
         [1.000, 1.000, 1.000]  // White
     ],
-    vampire: [
+    6: [
       [0.059, 0.063, 0.082],  // Deep dark background
       [0.118, 0.125, 0.157],  // Dark blue-gray
       [0.196, 0.208, 0.255],  // Light blue highlights
@@ -148,7 +159,7 @@ const palettes = {
       [1.000, 0.627, 0.431],  // Light orange highlight
       [1.000, 0.824, 0.667]   // Pale orange glow
     ],
-    ink: [
+    7: [
       [0.031, 0.031, 0.031],  // Deep black background
       [0.118, 0.098, 0.118],  // Dark purple-gray (shadows)
       [0.275, 0.157, 0.196],  // Dark burgundy (clothing)
@@ -159,6 +170,30 @@ const palettes = {
       [0.627, 0.706, 0.235],  // Bright green (leaves/moss)
       [0.824, 0.824, 0.824],  // White (highlights)
       [1.000, 1.000, 1.000]   // Pure white (spots/outline)
+    ],
+    8: [
+      [0.020, 0.024, 0.078],  // Deep navy background
+      [0.039, 0.047, 0.157],  // Dark blue (outer edge)
+      [0.078, 0.118, 0.314],  // Medium blue
+      [0.157, 0.235, 0.627],  // Bright blue
+      [0.314, 0.431, 0.902],  // Light blue glow
+      [0.784, 0.275, 0.431],  // Dark pink
+      [0.980, 0.392, 0.549],  // Bright pink
+      [0.980, 0.706, 0.431],  // Orange/yellow
+      [1.000, 0.863, 0.627],  // Light yellow
+      [1.000, 1.000, 1.000]   // Pure white highlights
+    ],
+    9: [
+      [0.031, 0.027, 0.035],  // Deep black
+      [0.157, 0.118, 0.196],  // Dark purple
+      [0.235, 0.392, 0.902],  // Bright blue
+      [0.431, 0.314, 0.784],  // Medium purple
+      [0.902, 0.431, 0.784],  // Bright pink
+      [0.980, 0.549, 0.902],  // Light pink
+      [0.196, 0.784, 0.314],  // Bright green
+      [0.980, 0.784, 0.196],  // Yellow/orange
+      [0.902, 0.902, 0.980],  // Light blue/white
+      [1.000, 1.000, 1.000]   // Pure white highlights
     ],
 };
 
@@ -190,6 +225,7 @@ const fragmentShaderSource = `
     uniform sampler2D uTexture;
     uniform vec2 resolution;
     uniform float pixelSize;
+    uniform float ditherFactor;
     uniform int paletteChoice;
 
     ${createPaletteDefinitions()}
@@ -200,7 +236,7 @@ const fragmentShaderSource = `
         float dist;
 
         if (paletteChoice == 0) {
-            // field palette
+            // field
             dist = distance(color, c0_0); if(dist < minDist) { minDist = dist; closestColor = c0_0; }
             dist = distance(color, c0_1); if(dist < minDist) { minDist = dist; closestColor = c0_1; }
             dist = distance(color, c0_2); if(dist < minDist) { minDist = dist; closestColor = c0_2; }
@@ -212,7 +248,7 @@ const fragmentShaderSource = `
             dist = distance(color, c0_8); if(dist < minDist) { minDist = dist; closestColor = c0_8; }
             dist = distance(color, c0_9); if(dist < minDist) { minDist = dist; closestColor = c0_9; }
         } else if (paletteChoice == 1) {
-            // Underwater palette
+            // Underwater
             dist = distance(color, c1_0); if(dist < minDist) { minDist = dist; closestColor = c1_0; }
             dist = distance(color, c1_1); if(dist < minDist) { minDist = dist; closestColor = c1_1; }
             dist = distance(color, c1_2); if(dist < minDist) { minDist = dist; closestColor = c1_2; }
@@ -224,7 +260,7 @@ const fragmentShaderSource = `
             dist = distance(color, c1_8); if(dist < minDist) { minDist = dist; closestColor = c1_8; }
             dist = distance(color, c1_9); if(dist < minDist) { minDist = dist; closestColor = c1_9; }
         } else if (paletteChoice == 2) {
-            // Forest palette
+            // Forest
             dist = distance(color, c2_0); if(dist < minDist) { minDist = dist; closestColor = c2_0; }
             dist = distance(color, c2_1); if(dist < minDist) { minDist = dist; closestColor = c2_1; }
             dist = distance(color, c2_2); if(dist < minDist) { minDist = dist; closestColor = c2_2; }
@@ -236,7 +272,7 @@ const fragmentShaderSource = `
             dist = distance(color, c2_8); if(dist < minDist) { minDist = dist; closestColor = c2_8; }
             dist = distance(color, c2_9); if(dist < minDist) { minDist = dist; closestColor = c2_9; }
         } else if (paletteChoice == 3) {
-            // Flame palette
+            // Flame
             dist = distance(color, c3_0); if(dist < minDist) { minDist = dist; closestColor = c3_0; }
             dist = distance(color, c3_1); if(dist < minDist) { minDist = dist; closestColor = c3_1; }
             dist = distance(color, c3_2); if(dist < minDist) { minDist = dist; closestColor = c3_2; }
@@ -248,7 +284,7 @@ const fragmentShaderSource = `
             dist = distance(color, c3_8); if(dist < minDist) { minDist = dist; closestColor = c3_8; }
             dist = distance(color, c3_9); if(dist < minDist) { minDist = dist; closestColor = c3_9; }
         } else if (paletteChoice == 4) {
-            // Dusk palette
+            // Dusk
             dist = distance(color, c4_0); if(dist < minDist) { minDist = dist; closestColor = c4_0; }
             dist = distance(color, c4_1); if(dist < minDist) { minDist = dist; closestColor = c4_1; }
             dist = distance(color, c4_2); if(dist < minDist) { minDist = dist; closestColor = c4_2; }
@@ -260,7 +296,7 @@ const fragmentShaderSource = `
             dist = distance(color, c4_8); if(dist < minDist) { minDist = dist; closestColor = c4_8; }
             dist = distance(color, c4_9); if(dist < minDist) { minDist = dist; closestColor = c4_9; }
         } else if (paletteChoice == 5) {
-            // Grayscale palette
+            // Grayscale
             dist = distance(color, c5_0); if(dist < minDist) { minDist = dist; closestColor = c5_0; }
             dist = distance(color, c5_1); if(dist < minDist) { minDist = dist; closestColor = c5_1; }
             dist = distance(color, c5_2); if(dist < minDist) { minDist = dist; closestColor = c5_2; }
@@ -272,7 +308,7 @@ const fragmentShaderSource = `
             dist = distance(color, c5_8); if(dist < minDist) { minDist = dist; closestColor = c5_8; }
             dist = distance(color, c5_9); if(dist < minDist) { minDist = dist; closestColor = c5_9; }
         } else if (paletteChoice == 6) {
-            // Vampire palette
+            // Vampire
             dist = distance(color, c6_0); if(dist < minDist) { minDist = dist; closestColor = c6_0; }
             dist = distance(color, c6_1); if(dist < minDist) { minDist = dist; closestColor = c6_1; }
             dist = distance(color, c6_2); if(dist < minDist) { minDist = dist; closestColor = c6_2; }
@@ -283,8 +319,8 @@ const fragmentShaderSource = `
             dist = distance(color, c6_7); if(dist < minDist) { minDist = dist; closestColor = c6_7; }
             dist = distance(color, c6_8); if(dist < minDist) { minDist = dist; closestColor = c6_8; }
             dist = distance(color, c6_9); if(dist < minDist) { minDist = dist; closestColor = c6_9; }
-        } else {
-            // Ink palette
+        } else if (paletteChoice == 7){
+            // Ink
             dist = distance(color, c7_0); if(dist < minDist) { minDist = dist; closestColor = c7_0; }
             dist = distance(color, c7_1); if(dist < minDist) { minDist = dist; closestColor = c7_1; }
             dist = distance(color, c7_2); if(dist < minDist) { minDist = dist; closestColor = c7_2; }
@@ -295,15 +331,86 @@ const fragmentShaderSource = `
             dist = distance(color, c7_7); if(dist < minDist) { minDist = dist; closestColor = c7_7; }
             dist = distance(color, c7_8); if(dist < minDist) { minDist = dist; closestColor = c7_8; }
             dist = distance(color, c7_9); if(dist < minDist) { minDist = dist; closestColor = c7_9; }
+        } else if (paletteChoice == 8){
+            // Galaxy
+            dist = distance(color, c8_0); if(dist < minDist) { minDist = dist; closestColor = c8_0; }
+            dist = distance(color, c8_1); if(dist < minDist) { minDist = dist; closestColor = c8_1; }
+            dist = distance(color, c8_2); if(dist < minDist) { minDist = dist; closestColor = c8_2; }
+            dist = distance(color, c8_3); if(dist < minDist) { minDist = dist; closestColor = c8_3; }
+            dist = distance(color, c8_4); if(dist < minDist) { minDist = dist; closestColor = c8_4; }
+            dist = distance(color, c8_5); if(dist < minDist) { minDist = dist; closestColor = c8_5; }
+            dist = distance(color, c8_6); if(dist < minDist) { minDist = dist; closestColor = c8_6; }
+            dist = distance(color, c8_7); if(dist < minDist) { minDist = dist; closestColor = c8_7; }
+            dist = distance(color, c8_8); if(dist < minDist) { minDist = dist; closestColor = c8_8; }
+            dist = distance(color, c8_9); if(dist < minDist) { minDist = dist; closestColor = c8_9; }
+        } else if (paletteChoice == 9){
+            // test
+            dist = distance(color, c9_0); if(dist < minDist) { minDist = dist; closestColor = c9_0; }
+            dist = distance(color, c9_1); if(dist < minDist) { minDist = dist; closestColor = c9_1; }
+            dist = distance(color, c9_2); if(dist < minDist) { minDist = dist; closestColor = c9_2; }
+            dist = distance(color, c9_3); if(dist < minDist) { minDist = dist; closestColor = c9_3; }
+            dist = distance(color, c9_4); if(dist < minDist) { minDist = dist; closestColor = c9_4; }
+            dist = distance(color, c9_5); if(dist < minDist) { minDist = dist; closestColor = c9_5; }
+            dist = distance(color, c9_6); if(dist < minDist) { minDist = dist; closestColor = c9_6; }
+            dist = distance(color, c9_7); if(dist < minDist) { minDist = dist; closestColor = c9_7; }
+            dist = distance(color, c9_8); if(dist < minDist) { minDist = dist; closestColor = c9_8; }
+            dist = distance(color, c9_9); if(dist < minDist) { minDist = dist; closestColor = c9_9; }
         }
         
         return closestColor;
     }
 
+    float mod2(float x, float y) {
+        return x - y * floor(x/y);
+    }
+
+    // 4x4 Bayer matrix indexed using mod2
+    float getBayerValue(vec2 coord) {
+        float x = mod2(coord.x, 4.0);
+        float y = mod2(coord.y, 4.0);
+        
+        if(x < 1.0) {
+            if(y < 1.0) return 0.0/16.0;
+            else if(y < 2.0) return 12.0/16.0;
+            else if(y < 3.0) return 3.0/16.0;
+            else return 15.0/16.0;
+        } 
+        else if(x < 2.0) {
+            if(y < 1.0) return 8.0/16.0;
+            else if(y < 2.0) return 4.0/16.0;
+            else if(y < 3.0) return 11.0/16.0;
+            else return 7.0/16.0;
+        }
+        else if(x < 3.0) {
+            if(y < 1.0) return 2.0/16.0;
+            else if(y < 2.0) return 14.0/16.0;
+            else if(y < 3.0) return 1.0/16.0;
+            else return 13.0/16.0;
+        }
+        else {
+            if(y < 1.0) return 10.0/16.0;
+            else if(y < 2.0) return 6.0/16.0;
+            else if(y < 3.0) return 9.0/16.0;
+            else return 5.0/16.0;
+        }
+    }
+
     void main() {
         vec2 pixelatedCoord = floor(vTexCoord * resolution / pixelSize) * pixelSize / resolution;
         vec4 color = texture2D(uTexture, pixelatedCoord);
-        vec3 quantizedColor = findClosestColor(color.rgb);
+        
+        // Get the dither threshold using screen coordinates
+        float threshold = getBayerValue(gl_FragCoord.xy);
+        
+        // Apply dithering by adjusting the color before quantization
+        vec3 adjustedColor = color.rgb + (threshold - 0.5) * ditherFactor;
+        
+        // Clamp the adjusted color
+        adjustedColor = clamp(adjustedColor, 0.0, 1.0);
+        
+        // Find the closest color in the palette for the adjusted color
+        vec3 quantizedColor = findClosestColor(adjustedColor);
+        
         gl_FragColor = vec4(quantizedColor, 1.0);
     }
 `;
@@ -361,6 +468,7 @@ const positionLocation = gl.getAttribLocation(program, 'position');
 const texCoordLocation = gl.getAttribLocation(program, 'texCoord');
 const resolutionLocation = gl.getUniformLocation(program, 'resolution');
 const pixelSizeLocation = gl.getUniformLocation(program, 'pixelSize');
+const ditherFactorLocation = gl.getUniformLocation(program, 'ditherFactor');
 const paletteChoiceLocation = gl.getUniformLocation(program, 'paletteChoice');
 
 const texture = gl.createTexture();
@@ -393,7 +501,7 @@ async function setupWebcam() {
     video.setAttribute('playsinline', '');  // Required for iOS
     video.setAttribute('webkit-playsinline', '');
     video.setAttribute('autoplay', '');
-    video.style.transform = 'scaleX(-1)';  // Mirror the video
+    // video.style.transform = 'scaleX(-1)';  // Mirror the video
   }
 
   try {
@@ -451,19 +559,9 @@ function drawScene(){
       // Set uniforms
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
       gl.uniform1f(pixelSizeLocation, parseFloat(obj.pixelSize));
+      gl.uniform1f(ditherFactorLocation, parseFloat(obj.ditherFactor));
 
-      let paletteValue;
-      switch(obj.colorPalette) {
-          case 'field': paletteValue = 0; break;
-          case 'underwater': paletteValue = 1; break;
-          case 'forest': paletteValue = 2; break;
-          case 'flame': paletteValue = 3; break;
-          case 'dusk': paletteValue = 4; break;
-          case 'grayscale': paletteValue = 5; break;
-          case 'vampire': paletteValue = 6; break;
-          case 'ink': paletteValue = 7; break;
-          default: paletteValue = 0;
-      }
+      let paletteValue = paletteNames.indexOf(obj.colorPalette);
       gl.uniform1i(paletteChoiceLocation, paletteValue);
 
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);

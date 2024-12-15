@@ -1,7 +1,13 @@
 Video-to-Pixel-Art
 =====
 
-<p>Turn videos into pixel art! Use your webcam feed or upload a video, then use the controls to adjust the color palette, pixel size, and dithering strength.</p>
+<p>Turn videos into pixel art! Use your webcam feed or upload a video, then use the controls to adjust the aesthetic:</p>
+<ul>
+  <li>Color palette</li>
+  <li>Pixel size</li>
+  <li>Dithering strength -- based on the Bayer dithering algorithm</li>
+  <li>Edge detection strength and color -- based on Sobel edge detection</li>
+</ul>
 <p><b>Live demo: https://collidingscopes.github.io/video-to-pixel-art/</b></p>
 <img src="assets/ipodAd.gif">
 <p>All processing is done in real-time within your browser, using javascript / webgl shaders / html canvas.</p>

@@ -29,12 +29,16 @@ if (!gl) {
 }
 
 //add gui
-let paletteNames = ["field","underwater","forest","flame","dusk","grayscale","vampire","ink","galaxy","acid"];
+let paletteNames = ["field","underwater","forest","flame","dusk","grayscale",
+  "vampire","ink","galaxy","acid","sand"];
 
 let obj = {
   pixelSize: 6,
-  ditherFactor: 0.4,
+  ditherFactor: 0.20,
   colorPalette: "underwater",
+  edgeThreshold: 0.3,
+  edgeIntensity: 0.5,
+  edgeColor: [255, 255, 255],
 };
 
 let gui = new dat.gui.GUI( { autoPlace: false } );
@@ -51,9 +55,17 @@ obj['uploadVideo'] = function () {
 };
 gui.add(obj, 'uploadVideo').name('Upload Video');
 
-gui.add(obj, "pixelSize").min(1).max(32).step(1).name('Pixel Size');
-gui.add(obj, "ditherFactor").min(0).max(1).step(0.01).name('Dither Strength');
-gui.add(obj, "colorPalette", paletteNames);
+gui.add(obj, "pixelSize").min(1).max(32).step(1).name('Pixel Size').listen();
+gui.add(obj, "ditherFactor").min(0).max(1).step(0.01).name('Dither Strength').listen();
+gui.add(obj, "colorPalette", paletteNames).listen();
+gui.add(obj, "edgeThreshold").min(0.01).max(0.5).step(0.01).name('Edge Threshold').listen();
+gui.add(obj, "edgeIntensity").min(0).max(1).step(0.01).name('Edge Intensity').listen();
+gui.addColor(obj, "edgeColor").name('Edge Color').listen();
+
+obj['randomizeInputs'] = function () {
+  randomizeInputs();
+};
+gui.add(obj, 'randomizeInputs').name("Randomize Inputs (r)");
 
 obj['pausePlay'] = function () {
   toggleAnimationPlay();
@@ -195,6 +207,18 @@ const palettes = {
       [0.902, 0.902, 0.980],  // Light blue/white
       [1.000, 1.000, 1.000]   // Pure white highlights
     ],
+    10: [
+      [0.231, 0.141, 0.090],  // Deep Walnut
+      [0.361, 0.227, 0.129],  // Dark Oak
+      [0.545, 0.271, 0.075],  // Rustic Brown
+      [0.627, 0.322, 0.176],  // Warm Umber
+      [0.737, 0.561, 0.561],  // Cedar
+      [0.824, 0.706, 0.549],  // Desert Sand
+      [0.871, 0.722, 0.529],  // Wheat
+      [0.933, 0.796, 0.678],  // Pale Almond
+      [0.980, 0.922, 0.843],  // Antique White
+      [1.000, 1.000, 0.941]   // Ivory
+    ],
 };
 
 // Helper function to generate shader color definitions
@@ -227,8 +251,52 @@ const fragmentShaderSource = `
     uniform float pixelSize;
     uniform float ditherFactor;
     uniform int paletteChoice;
+    uniform float edgeThreshold;
+    uniform float edgeIntensity;
+    uniform vec3 edgeColor;
 
     ${createPaletteDefinitions()}
+
+    // Sobel operator kernels
+    mat3 sobelX = mat3(
+        -1.0, 0.0, 1.0,
+        -2.0, 0.0, 2.0,
+        -1.0, 0.0, 1.0
+    );
+
+    mat3 sobelY = mat3(
+        -1.0, -2.0, -1.0,
+         0.0,  0.0,  0.0,
+         1.0,  2.0,  1.0
+    );
+
+    // Helper function to get grayscale value
+    float getLuminance(vec3 color) {
+        return dot(color, vec3(0.299, 0.587, 0.114));
+    }
+
+    // Edge detection function
+    float detectEdge(vec2 coord) {
+        float pixelWidth = 1.0 / resolution.x;
+        float pixelHeight = 1.0 / resolution.y;
+        
+        float gx = 0.0;
+        float gy = 0.0;
+        
+        // Apply Sobel operator
+        for(int i = -1; i <= 1; i++) {
+            for(int j = -1; j <= 1; j++) {
+                vec2 offset = vec2(float(i) * pixelWidth, float(j) * pixelHeight);
+                vec3 color = texture2D(uTexture, coord + offset).rgb;
+                float luminance = getLuminance(color);
+                
+                gx += luminance * sobelX[i+1][j+1];
+                gy += luminance * sobelY[i+1][j+1];
+            }
+        }
+        
+        return sqrt(gx * gx + gy * gy);
+    }
 
     vec3 findClosestColor(vec3 color) {
         float minDist = 1000.0;
@@ -344,7 +412,7 @@ const fragmentShaderSource = `
             dist = distance(color, c8_8); if(dist < minDist) { minDist = dist; closestColor = c8_8; }
             dist = distance(color, c8_9); if(dist < minDist) { minDist = dist; closestColor = c8_9; }
         } else if (paletteChoice == 9){
-            // test
+            // acid
             dist = distance(color, c9_0); if(dist < minDist) { minDist = dist; closestColor = c9_0; }
             dist = distance(color, c9_1); if(dist < minDist) { minDist = dist; closestColor = c9_1; }
             dist = distance(color, c9_2); if(dist < minDist) { minDist = dist; closestColor = c9_2; }
@@ -355,6 +423,18 @@ const fragmentShaderSource = `
             dist = distance(color, c9_7); if(dist < minDist) { minDist = dist; closestColor = c9_7; }
             dist = distance(color, c9_8); if(dist < minDist) { minDist = dist; closestColor = c9_8; }
             dist = distance(color, c9_9); if(dist < minDist) { minDist = dist; closestColor = c9_9; }
+        } else if (paletteChoice == 10){
+            // sand
+            dist = distance(color, c10_0); if(dist < minDist) { minDist = dist; closestColor = c10_0; }
+            dist = distance(color, c10_1); if(dist < minDist) { minDist = dist; closestColor = c10_1; }
+            dist = distance(color, c10_2); if(dist < minDist) { minDist = dist; closestColor = c10_2; }
+            dist = distance(color, c10_3); if(dist < minDist) { minDist = dist; closestColor = c10_3; }
+            dist = distance(color, c10_4); if(dist < minDist) { minDist = dist; closestColor = c10_4; }
+            dist = distance(color, c10_5); if(dist < minDist) { minDist = dist; closestColor = c10_5; }
+            dist = distance(color, c10_6); if(dist < minDist) { minDist = dist; closestColor = c10_6; }
+            dist = distance(color, c10_7); if(dist < minDist) { minDist = dist; closestColor = c10_7; }
+            dist = distance(color, c10_8); if(dist < minDist) { minDist = dist; closestColor = c10_8; }
+            dist = distance(color, c10_9); if(dist < minDist) { minDist = dist; closestColor = c10_9; }
         }
         
         return closestColor;
@@ -398,10 +478,14 @@ const fragmentShaderSource = `
     void main() {
         vec2 pixelatedCoord = floor(vTexCoord * resolution / pixelSize) * pixelSize / resolution;
         vec4 color = texture2D(uTexture, pixelatedCoord);
-        
+
+        // Edge detection
+        float edge = detectEdge(pixelatedCoord);
+        bool isEdge = edge > edgeThreshold;
+
         // Get the dither threshold using screen coordinates
         float threshold = getBayerValue(gl_FragCoord.xy);
-        
+
         // Apply dithering by adjusting the color before quantization
         vec3 adjustedColor = color.rgb + (threshold - 0.5) * ditherFactor;
         
@@ -410,7 +494,12 @@ const fragmentShaderSource = `
         
         // Find the closest color in the palette for the adjusted color
         vec3 quantizedColor = findClosestColor(adjustedColor);
-        
+
+        // Apply edge highlighting
+        if (isEdge) {
+            quantizedColor = mix(quantizedColor, edgeColor, edgeIntensity);
+        }
+
         gl_FragColor = vec4(quantizedColor, 1.0);
     }
 `;
@@ -464,12 +553,16 @@ const texCoordBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
 
+//uniform locations
 const positionLocation = gl.getAttribLocation(program, 'position');
 const texCoordLocation = gl.getAttribLocation(program, 'texCoord');
 const resolutionLocation = gl.getUniformLocation(program, 'resolution');
 const pixelSizeLocation = gl.getUniformLocation(program, 'pixelSize');
 const ditherFactorLocation = gl.getUniformLocation(program, 'ditherFactor');
 const paletteChoiceLocation = gl.getUniformLocation(program, 'paletteChoice');
+const edgeThresholdLocation = gl.getUniformLocation(program, 'edgeThreshold');
+const edgeIntensityLocation = gl.getUniformLocation(program, 'edgeIntensity');
+const edgeColorLocation = gl.getUniformLocation(program, 'edgeColor');
 
 const texture = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -560,6 +653,14 @@ function drawScene(){
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
       gl.uniform1f(pixelSizeLocation, parseFloat(obj.pixelSize));
       gl.uniform1f(ditherFactorLocation, parseFloat(obj.ditherFactor));
+      gl.uniform1f(edgeThresholdLocation, parseFloat(obj.edgeThreshold));
+      gl.uniform1f(edgeIntensityLocation, parseFloat(obj.edgeIntensity));
+      // Convert edge color from 0-255 range to 0-1 range for WebGL
+      gl.uniform3f(edgeColorLocation, 
+          obj.edgeColor[0] / 255.0,
+          obj.edgeColor[1] / 255.0,
+          obj.edgeColor[2] / 255.0,
+      );
 
       let paletteValue = paletteNames.indexOf(obj.colorPalette);
       gl.uniform1i(paletteChoiceLocation, paletteValue);
@@ -692,9 +793,26 @@ document.addEventListener('keydown', function(event) {
       toggleGUI();
   } else if (event.key === 'p') {
     toggleAnimationPlay();
+  } else if(event.key === 'r'){
+    randomizeInputs();
   }
   
 });
+
+function randomizeInputs(){
+  obj.pixelSize = Math.ceil(Math.pow(Math.random(),4)*32);
+  obj.ditherFactor = Math.pow(Math.random(),2);
+  obj.colorPalette = paletteNames[Math.round(Math.random()*(paletteNames.length-1))];
+  obj.edgeThreshold = Math.random() * 0.49 + 0.01;
+  obj.edgeIntensity = Math.random();
+
+  // Generate random RGB color for edges
+  obj.edgeColor = [
+      Math.floor(Math.random() * 256),
+      Math.floor(Math.random() * 256),
+      Math.floor(Math.random() * 256)
+  ];
+}
 
 //MAIN METHOD
 setInterval(startDefaultVideo(),1000);
